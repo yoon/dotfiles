@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Make sure oh-my-zsh exists
-if ! [ -d ~/.oh-my-zsh ]; then
-  echo "oh-my-zsh not detected - installing now..."
-  curl -L https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh | sh
-fi
-
 # Set up directories
 mkdir -p ~/.config/git
 
@@ -14,29 +8,16 @@ gemrc
 config/git/attributes
 gitconfig
 gitignore
-zshrc
-zprofile
 irbrc
 powconfig
+profile
 pryrc
 rspec
-aprc
-tmux.conf
-tmux-linux
-tmux-osx
 vimrc
-oh-my-zsh/custom/filesystem.zsh
-oh-my-zsh/custom/git.zsh
-oh-my-zsh/custom/login.zsh
-oh-my-zsh/custom/tablexi.zsh
-oh-my-zsh/custom/openssl.zsh
-oh-my-zsh/custom/explain.zsh
-oh-my-zsh/custom/postgresql.zsh
 "
 
 BIN="
 resolve-schema
-safe-reattach-to-user-namespace
 "
 
 # Create symbolic links for all configuration files
@@ -84,4 +65,3 @@ do
 done
 
 exit 0
-

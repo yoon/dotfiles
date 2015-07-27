@@ -1,2 +1,4 @@
 export POW_TIMEOUT=600
 export POW_WORKERS=3
+export BYEBUGPORT=3001
+# http://stackoverflow.com/a/25823241

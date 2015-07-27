@@ -1,34 +1,44 @@
 [user]
-	name = Bradley Schaefer
-	email = bradley.schaefer@gmail.com
+  name = Mark Yoon
+  email = "(none)"
 [alias]
-	co = checkout
-	graph = log --graph --date-order -C -M --pretty=format:\"<%h> %ad [%an] %Cgreen%d%Creset %s\" --all --date=short
-	prune = remote prune origin
-	tidy = "!f() { \
-		local branch="${1-develop}"; \
-		echo "Pruning branches that are already merged into $branch..."; \
-		git remote prune origin && git branch --merged "$branch" | grep --color=auto --exclude-dir={.bzr,.cvs,.git,.hg,.svn} -v " $branch" | xargs -n 1 git branch -d; \
-	}; f" 
+  st = status
+  ci = commit
+  co = checkout
+  br = branch
+  di = diff --cached
+  lg = log --name-status
+  changelog = log --format=\"%+d* %s\"
+  lgg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+  graph = log --graph --date-order -C -M --pretty=format:\"<%h> %ad [%an] %Cgreen%d%Creset %s\" --all --date=short
+  prune = remote prune origin
+  tidy = "!f() { \
+    local branch="${1-develop}"; \
+    echo "Pruning branches that are already merged into $branch..."; \
+    git remote prune origin && git branch --merged "$branch" | grep --color=auto --exclude-dir={.bzr,.cvs,.git,.hg,.svn} -v " $branch" | xargs -n 1 git branch -d; \
+  }; f"
 [color]
-	diff = auto
-	status = auto
-	branch = auto
-	ui = auto
+  diff = auto
+  status = auto
+  branch = auto
+  ui = auto
+  interactive = auto
 [core]
-	excludesfile = ~/.gitignore
-	editor = vim
-	autocrlf = input
-	pager = less -FRX
+  excludesfile = ~/.gitignore
+  autocrlf = input
+  pager = less -+$LESS -FRX
 [apply]
-	whitespace = nowarn
+  whitespace = nowarn
 [format]
-	pretty = short
+  pretty = medium
+[merge]
+  tool = opendiff
+  summary = true
+[push]
+  default = current
 [merge "bundle"]
   name = bundle
   driver = bundle
 [merge "railsschema"]
-	name = newer Rails schema version
-	driver = resolve-schema %A %O %B %L 
-[heroku]
-	account = txi
+  name = newer Rails schema version
+  driver = resolve-schema %A %O %B %L
