@@ -17,3 +17,7 @@ export LANGUAGE=en_US.UTF-8
 if [ "$BASH" ]; then
   . ~/.bashrc
 fi
+
+if [ -f ~/.git-completion.bash ]; then
+  . ~/.git-completion.bash
+fi

@@ -8,6 +8,7 @@ gemrc
 config/git/attributes
 gitconfig
 gitignore
+git-completion.bash
 irbrc
 powconfig
 profile

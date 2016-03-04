@@ -17,6 +17,7 @@
     echo "Pruning branches that are already merged into $branch..."; \
     git remote prune origin && git branch --merged "$branch" | grep --color=auto --exclude-dir={.bzr,.cvs,.git,.hg,.svn} -v " $branch" | xargs -n 1 git branch -d; \
   }; f"
+	permission-reset = "!git diff -p | grep -E \"^(diff|old mode|new mode)\" | sed -e \"s/^old/NEW/;s/^new/old/;s/^NEW/new/\" | git apply"
 [color]
   diff = auto
   status = auto
@@ -42,3 +43,7 @@
 [merge "railsschema"]
   name = newer Rails schema version
   driver = resolve-schema %A %O %B %L
+[filter "lfs"]
+	clean = git-lfs clean %f
+	smudge = git-lfs smudge %f
+	required = true
