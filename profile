@@ -2,6 +2,7 @@
 alias cd..='cd ..'
 alias g='git'
 alias be='bundle exec'
+alias sf='eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_rsa'
 
 # Tell ls to be colourful
 alias ls="ls -G"
