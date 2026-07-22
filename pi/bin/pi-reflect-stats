@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# pi-reflect-stats — quantitative summary of one pi session JSONL.
+# Usage: pi-reflect-stats [SESSION]
+#   SESSION = path to .jsonl | partial session id | (omitted → newest session for $PWD)
+# Emits human-readable stats to stdout; the /reflect prompt reads these, then
+# reads the transcript itself for qualitative lessons.
+set -euo pipefail
+root=~/.pi/agent/sessions
+
+resolve() {
+  local arg="${1:-}"
+  if [[ -n "$arg" && -f "$arg" ]]; then echo "$arg"; return; fi
+  if [[ -n "$arg" ]]; then
+    find "$root" -name "*$arg*.jsonl" -print0 2>/dev/null \
+      | xargs -0 ls -t 2>/dev/null | head -1; return
+  fi
+  local p="${PWD#/}"; p="${p//\//-}"
+  ls -t "$root/--$p--"/*.jsonl 2>/dev/null | head -1
+}
+
+f="$(resolve "${1:-}")"
+[[ -n "$f" && -f "$f" ]] || { echo "no session file found (arg: '${1:-}')" >&2; exit 1; }
+echo "session_file: $f"
+
+jq -s '
+  def iso: sub("\\.[0-9]+Z$";"Z") | fromdateiso8601;
+  def dur($a;$b): (($b|iso) - ($a|iso));
+  (map(.timestamp) | [.[] | select(.)] ) as $ts
+  | ($ts | first) as $start | ($ts | last) as $end
+  | (map(select(.type=="message" and .message.role=="assistant"))) as $asst
+  | (map(select(.type=="message" and .message.role=="user")))      as $user
+  | (map(select(.type=="message" and .message.role=="toolResult")))as $tr
+  | {
+      started: $start,
+      ended: $end,
+      wall_clock_min: (dur($start;$end)/60 | .*10|round/10),
+      user_turns: ($user|length),
+      assistant_turns: ($asst|length),
+      models: (map(select(.type=="model_change")|{at:.timestamp,model:.modelId,provider:.provider})),
+      thinking_changes: (map(select(.type=="thinking_level_change")|{at:.timestamp,level:(.level//.thinkingLevel)})),
+      cost_usd: ([$asst[].message.usage.cost.total // 0] | add | .*100|round/100),
+      total_tokens: ([$asst[].message.usage.totalTokens // 0] | add),
+      cache_read_tokens: ([$asst[].message.usage.cacheRead // 0] | add),
+      reasoning_tokens: ([$asst[].message.usage.reasoning // 0] | add),
+      cost_by_model: (
+        $asst | group_by(.message.model)
+        | map({ (.[0].message.model): {
+            turns: length,
+            cost_usd: ([.[].message.usage.cost.total // 0]|add|.*100|round/100),
+            tokens: ([.[].message.usage.totalTokens // 0]|add) } })
+        | add),
+      tool_calls: (
+        [ $asst[].message.content[]? | select(.type=="toolCall") | .name ]
+        | group_by(.) | map({(.[0]): length}) | add),
+      tool_errors: ([ $tr[] | select(.message.isError==true) ] | length)
+    }
+' "$f"

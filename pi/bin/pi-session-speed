@@ -1,0 +1,73 @@
+#!/usr/bin/env node
+// pi-session-speed — per-turn timing/tokens from a pi session JSONL. No extension needed.
+// Uses data baseline pi already records (message timestamps + usage). TTFT is NOT
+// available post-hoc (session logs completion times only) — that's the one thing a
+// live extension could add.
+//
+// Usage:
+//   pi-session-speed [SESSION]        SESSION = path | partial-id | (omitted → newest for $PWD)
+//   pi-session-speed --sum FILE...    totals across several sessions
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
+
+const ROOT = join(homedir(), ".pi", "agent", "sessions");
+const toMs = (t) => (typeof t === "number" ? t : Date.parse(t));
+const IDLE_CAP_MIN = 5; // turns longer than this likely include idle/human time → flagged
+
+function resolve(arg) {
+  if (arg && statSyncSafe(arg)) return arg;
+  const all = [];
+  for (const d of readdirSync(ROOT)) {
+    const dir = join(ROOT, d);
+    try { for (const f of readdirSync(dir)) if (f.endsWith(".jsonl")) all.push(join(dir, f)); } catch {}
+  }
+  if (arg) return all.filter((f) => f.includes(arg)).sort(byMtime).pop();
+  const key = "--" + process.cwd().replace(/^\//, "").replace(/\//g, "-") + "--";
+  return all.filter((f) => f.includes(key)).sort(byMtime).pop();
+}
+const statSyncSafe = (p) => { try { return statSync(p); } catch { return null; } };
+const byMtime = (a, b) => statSync(a).mtimeMs - statSync(b).mtimeMs;
+
+function turns(path) {
+  const rows = readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l));
+  const out = []; let cur = null;
+  for (const e of rows) {
+    if (e.type !== "message") continue;
+    const role = e.message?.role, ts = toMs(e.timestamp ?? e.message?.timestamp);
+    if (role === "user") {
+      const text = (e.message.content ?? []).filter((c) => c.type === "text").map((c) => c.text).join(" ").trim();
+      if (!text) continue;
+      cur = { prompt: text, start: ts, end: ts, model: "", out: 0, reason: 0 }; out.push(cur);
+    } else if (cur && (role === "assistant" || role === "toolResult")) {
+      cur.end = Math.max(cur.end, ts);
+      if (role === "assistant") { cur.model = e.message.model || cur.model; cur.out += e.message.usage?.output ?? 0; cur.reason += e.message.usage?.reasoning ?? 0; }
+    }
+  }
+  return out;
+}
+
+function report(path) {
+  const ts = turns(path);
+  let total = 0, out = 0, reason = 0;
+  console.log(`\n${path.split("/").pop()}  (${ts.length} turns)`);
+  console.log(`  min   out    reason  model                prompt`);
+  for (const t of ts) {
+    const min = (t.end - t.start) / 60000; total += min; out += t.out; reason += t.reason;
+    const flag = min > IDLE_CAP_MIN ? "⚠" : " ";
+    console.log(`  ${min.toFixed(1).padStart(5)}${flag}${String(t.out).padStart(6)} ${String(t.reason).padStart(6)}  ${(t.model || "?").padEnd(20).slice(0,20)} ${t.prompt.replace(/\s+/g," ").slice(0,44)}`);
+  }
+  console.log(`  ── ${total.toFixed(1)} min · ${out} out-tok · ${reason} reason-tok · ⚠=possible idle (>${IDLE_CAP_MIN}min)`);
+  return { total, out, reason, n: ts.length };
+}
+
+const args = process.argv.slice(2);
+if (args[0] === "--sum") {
+  let T = 0, O = 0, R = 0, N = 0;
+  for (const f of args.slice(1)) { const r = report(f); T += r.total; O += r.out; R += r.reason; N += r.n; }
+  console.log(`\n=== SUM: ${N} turns · ${T.toFixed(1)} min · ${O} out-tok · ${R} reason-tok ===`);
+} else {
+  const f = resolve(args[0]);
+  if (!f) { console.error("no session found"); process.exit(1); }
+  report(f);
+}
