@@ -12,8 +12,9 @@ DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 link() {
   local src="$DOTFILES_DIR/$1" dst="$2"
   if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    echo "*** $dst exists — backing up to $dst.bak"
-    mv "$dst" "$dst.bak"
+    bak="$dst.$(date +%Y%m%d).bak"   # date-stamped so re-runs don't clobber a prior backup
+    echo "*** $dst exists — backing up to $bak"
+    mv "$dst" "$bak"
   fi
   mkdir -p "$(dirname "$dst")"
   rm -f "$dst"                    # clear any existing symlink (avoids ln dereferencing into a dir)
