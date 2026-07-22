@@ -39,6 +39,17 @@ Workflow: draft the content → show it → wait for explicit "yes" / approval �
 
 Per action, not per batch. Approving one does not imply approval for similar updates. Each action needs its own approval.
 
+## IP boundary
+
+Portable improvements to how I work should accrue to my personal dotfiles automatically — I shouldn't have to remember to ask.
+
+**The line:**
+- **Mine → version in my personal dotfiles repo:** original work I authored (prompt, extension, script, alias, shell/git config) that is portable and carries NO employer content — no roster/PII, internal URLs, tooling/registry names, product or project specifics, internal paths, or session data.
+- **Not mine → machine-local or an employer-owned repo:** anything with employer content, tooling I was given rather than wrote, or context laden with internal work (project notes, session samples, recurring context).
+- **Unsure → treat as not-mine:** don't move it; name the specific doubt and let me decide. Genericize internal strings out before versioning.
+
+**Standing behavior (no prompting needed):** when something passes the "mine" test, say so and offer to save it to my dotfiles repo (show-and-approve, same as any external action). Batch the offer at a natural break; don't interrupt mid-task. The repo backing `~/.pi/agent/AGENTS.md` (`readlink` it) is that dotfiles repo — no hardcoded path needed.
+
 ## Tool Use
 
 - **Batch tool calls to cut round-trips.** Independent reads/greps go in one turn (parallel tool calls), not serially. Prefer one shell call over many — `cat`/`rg`/`grep` across multiple files/dirs in a single `bash` rather than repeated `read`s. When reviewing a PR or a known file, read the diff/file up front instead of hunting for it across many calls. Each tool call is a serial model round-trip; fewer round-trips = faster.
