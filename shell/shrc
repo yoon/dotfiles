@@ -1,0 +1,9 @@
+# Portable shell config — aliases + exports only, POSIX sh syntax.
+# Symlinked to ~/.shrc by install-dotfiles.sh; sourced from ~/.zshrc (and ~/.bashrc if used).
+# Shell-specific config (setopt/shopt/prompt/completion/plugins) does NOT belong here.
+
+# Aliases for speed
+alias cd..='cd ..'
+alias g='git'
+alias be='bundle exec'
+alias grep='grep --color=auto'

@@ -1,6 +1,8 @@
 [user]
   name = Mark Yoon
-  email = "(none)"
+  # Refuse to auto-guess identity from host/gecos; require an explicit email
+  # (supplied per-machine by ~/.gitconfig). Fails loudly instead of committing as (none).
+  useConfigOnly = true
 [alias]
   st = status
   ci = commit
@@ -13,39 +15,18 @@
   graph = log --graph --date-order -C -M --pretty=format:\"<%h> %ad [%an] %Cgreen%d%Creset %s\" --all --date=short
   prune = remote prune origin
   tidy = "!f() { \
-    local branch="${1-develop}"; \
+    local branch="${1-main}"; \
     echo "Pruning branches that are already merged into $branch..."; \
     git remote prune origin && git branch --merged "$branch" | grep --color=auto --exclude-dir={.bzr,.cvs,.git,.hg,.svn} -v " $branch" | xargs -n 1 git branch -d; \
   }; f"
 	permission-reset = "!git diff -p | grep -E \"^(diff|old mode|new mode)\" | sed -e \"s/^old/NEW/;s/^new/old/;s/^NEW/new/\" | git apply"
-[color]
-  diff = auto
-  status = auto
-  branch = auto
-  ui = auto
-  interactive = auto
 [core]
   excludesfile = ~/.gitignore
   autocrlf = input
   pager = less -+$LESS -FRX
 [apply]
   whitespace = nowarn
-[format]
-  pretty = medium
-[merge]
-  tool = opendiff
-  summary = true
 [push]
   default = current
-[merge "bundle"]
-  name = bundle
-  driver = bundle
-[merge "railsschema"]
-  name = newer Rails schema version
-  driver = resolve-schema %A %O %B %L
-[filter "lfs"]
-	clean = git-lfs clean %f
-	smudge = git-lfs smudge %f
-	required = true
 [help]
     autocorrect = 1

@@ -1,68 +1,42 @@
-#!/bin/bash
+#!/bin/sh
+#
+# Install personal dotfiles by symlinking them into $HOME.
+# To skip a dotfile, comment out its line in the "What to install" list below.
+# POSIX sh; run it (don't source it) so $0 resolves to this script's path.
 
-# Set up directories
-mkdir -p ~/.config/git
+DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 
-FILES="
-gemrc
-config/git/attributes
-gitconfig
-gitignore
-git-completion.bash
-irbrc
-powconfig
-profile
-pryrc
-rspec
-vimrc
-"
-
-BIN="
-resolve-schema
-"
-
-# Create symbolic links for all configuration files
-for file in $FILES
-do
-  SOURCE="$HOME/dotfiles/$file"
-  TARGET="$HOME/.$file"
-
-  # Create backup file if the target already exists and is not a symlink
-  if [ -e "$TARGET" ] && [ ! -L "$TARGET" ]; then
-    echo "*** WARNING *** $TARGET already exists - copying original to .$file.old"
-    mv "$TARGET" "$TARGET.old"
+# link <repo-relative-source> <target>
+# Symlinks source -> target. If target is a pre-existing REAL file (not a symlink),
+# back it up to <target>.bak first so nothing is silently clobbered.
+link() {
+  local src="$DOTFILES_DIR/$1" dst="$2"
+  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    echo "*** $dst exists — backing up to $dst.bak"
+    mv "$dst" "$dst.bak"
   fi
+  mkdir -p "$(dirname "$dst")"
+  rm -f "$dst"                    # clear any existing symlink (avoids ln dereferencing into a dir)
+  ln -s "$src" "$dst" && echo "  $dst -> $src"
+}
 
-  case $OSTYPE in
-    darwin*)
-      ln -hfsv "$SOURCE" "$TARGET"
-      ;;
-    linux*)
-      ln -fsv "$SOURCE" "$TARGET"
-      ;;
-  esac
-done
+# ─── What to install (comment out a line to skip that dotfile) ───────────────
+link pi/AGENTS.md       "$HOME/.pi/agent/AGENTS.md"   # pi agent instructions (portable layer)
+link gemrc              "$HOME/.gemrc"                # RubyGems: --no-document
+link gitconfig.personal "$HOME/.gitconfig.personal"  # git name/aliases/prefs (see gitconfig hook)
+link gitignore          "$HOME/.gitignore"           # global ignore: .DS_Store, *~
+link vimrc              "$HOME/.vimrc"                # vim config
+link shell/shrc         "$HOME/.shrc"                 # portable aliases (see shrc hook)
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Create symbolic links for all bin files
-for file in $BIN
-do
-  SOURCE="$HOME/dotfiles/bin/$file"
-  TARGET="/usr/local/bin/$file"
+# Hook (pairs with gitconfig.personal): ensure a machine-local ~/.gitconfig exists and
+# includes ~/.gitconfig.personal. Idempotent; leaves existing email/dev/tool config intact.
+touch "$HOME/.gitconfig"
+git config --file "$HOME/.gitconfig" --get-all include.path 2>/dev/null | grep -q '\.gitconfig\.personal$' \
+  || git config --file "$HOME/.gitconfig" --add include.path "~/.gitconfig.personal"
 
-  # Create backup file if the target already exists and is not a symlink
-  if [ -e "$TARGET" ] && [ ! -L "$TARGET" ]; then
-    echo "*** WARNING *** $TARGET already exists - copying original to .$file.old"
-    mv "$TARGET" "$TARGET.old"
-  fi
-
-  case $OSTYPE in
-    darwin*)
-      ln -hfsv "$SOURCE" "$TARGET"
-      ;;
-    linux*)
-      ln -fsv "$SOURCE" "$TARGET"
-      ;;
-  esac
-done
+# Hook (pairs with shrc): source ~/.shrc from interactive zsh. Idempotent.
+grep -q '\.shrc' "$HOME/.zshrc" 2>/dev/null \
+  || printf '\n# Personal portable shell config\n[ -f ~/.shrc ] && . ~/.shrc\n' >> "$HOME/.zshrc"
 
 exit 0
