@@ -23,6 +23,7 @@ link() {
 
 # ─── What to install (comment out a line to skip that dotfile) ───────────────
 link pi/AGENTS.md       "$HOME/.pi/agent/AGENTS.md"   # pi agent instructions (portable layer)
+link pi/skills/pr-review/SKILL.md "$HOME/.pi/agent/skills/pr-review/SKILL.md" # portable PR-review methodology (Shopify specifics live in ~/.local session context)
 link gemrc              "$HOME/.gemrc"                # RubyGems: --no-document
 link gitconfig.personal "$HOME/.gitconfig.personal"  # git name/aliases/prefs (see gitconfig hook)
 link gitignore          "$HOME/.gitignore"           # global ignore: .DS_Store, *~
