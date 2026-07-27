@@ -7,6 +7,16 @@
 set -euo pipefail
 root=~/.pi/agent/sessions
 
+newest_all() {
+  find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
+}
+
+key_for_path() {
+  local p="${1#/}"
+  p="${p//\//-}"
+  printf '%s' "--$p--"
+}
+
 resolve() {
   local arg="${1:-}"
   if [[ -n "$arg" && -f "$arg" ]]; then echo "$arg"; return; fi
@@ -14,8 +24,13 @@ resolve() {
     find "$root" -name "*$arg*.jsonl" -print0 2>/dev/null \
       | xargs -0 ls -t 2>/dev/null | head -1; return
   fi
-  local p="${PWD#/}"; p="${p//\//-}"
-  ls -t "$root/--$p--"/*.jsonl 2>/dev/null | head -1
+
+  local key hit
+  key="$(key_for_path "$PWD")"
+  hit="$(ls -t "$root/$key"/*.jsonl 2>/dev/null | head -1 || true)"
+  [[ -n "$hit" ]] && { echo "$hit"; return; }
+
+  newest_all
 }
 
 f="$(resolve "${1:-}")"

@@ -5,76 +5,71 @@ description: Review PRs thoroughly and take a clear position. Use when the user 
 
 # PR Review
 
-> **Portable file — versioned in dotfiles, strictly employer-free.** Only portable review craft that holds at any employer/repo. No employer content: repo/org names, handles, roster, tool/service names, internal URLs/paths, product/project specifics, PR/issue numbers, session data — all live in the session context (§1). Unsure → treat as employer content, leave it out. Canonical: `AGENTS.md → IP boundary`.
+Portable review craft only. Employer/team/repo selection, tooling, logs, and domain heuristics live in `~/.local/recurring/pr-review/session-context.md`, which overrides this skill.
 
-Two phases: **selecting** which PR to review is employer-specific (team, ownership, priorities, search query) and lives entirely in the session context; **reviewing** one PR is the portable methodology below.
+## 1. Load context
 
-## 1. Load context first (every time)
-
-Read `~/.local/recurring/pr-review/session-context.md` in full and follow it — it owns selection, repo/tooling/dev-env mechanics, employer-specific heuristics, and the PR log, and **overrides this skill wherever they conflict**.
+Read `~/.local/recurring/pr-review/session-context.md` first.
 
 ## 2. Load the PR
 
-- Fetch the description, diff, and existing reviews/comments in parallel.
-- If the environment provides isolated worktrees, claim one before reading files or running anything, and start the dev env in the background — never block the review on it.
-- (Worktree-isolation + dev-env bring-up mechanics: session context.)
+- Claim any isolated worktree before reading files.
+- Fetch description, diff, comments/reviews, and CI in parallel.
+- Re-fetch HEAD before final copy; active PRs move.
 
-## 3. Build the model before critiquing
+## 3. Build the model before critique
 
-Explain the diff first (background → intuition → what changed and why), then a **withheld-answer** quiz before forming a position (Understanding Pass, AGENTS.md). Model first, verdict second.
+Explain the change first: background → intuition → what changed → why. Then ask a withheld-answer quiz before verdict when the change is non-trivial.
 
-## 4. Investigate deeply
+## 4. Verify, don't infer
 
-Don't just read the diff — verify it against the source:
+- Verify every PR-description claim against the diff.
+- Trace at least one detail through callers/callees by hand.
+- Cross-check existing patterns/helpers before asking for new code.
+- For removals, grep leftovers: references, tests, generated artifacts, stale docs, stale recordings.
+- For perf/cache claims, prove the primitive in the smallest runnable setup; test cold and warm paths.
+- For macro/helper behavior, trace the expansion/initializer before judging coverage.
+- For procedural migrations, load the relevant checklist/skill; diff-reading alone misses config and generated edges.
 
-- Read the full diff; verify every PR-description claim against the actual change (descriptions go stale).
-- After a removal (flag/method/dep), grep for leftover references and stale artifacts: tests named for the old state, dead single-element loops, hardcoded true/false, stale observability tags, orphaned setup hooks.
-- Cross-reference real source for existing patterns and sibling methods; look for duplicate or conflicting PRs.
-- For perf PRs, check memoization correctness (`defined?` vs `||=` for nilables, idempotency of shared instances).
-- Trace at least one detail through callers/callees by hand. Distinguish "sounds right" from "verified in source." Ask: sustainable fix, or band-aid?
-- Prefer existing shared helpers over accepting copy-pasted ones.
-
-## 5. Review heuristics
-
-**Verification**
-- Trace one layer deeper before asserting behavior; "I think" is a verification trigger, not a hedge.
-- Trace the real resolver/lookup before claiming end-to-end correctness — don't assume a generated id resolves downstream.
+## 5. Heuristics
 
 **Freshness**
-- Re-fetch diff/comments/HEAD before final copy; PRs move while you draft (force-pushes, bot comments).
-- After a rebase, compare the PR-touched files between the approved SHA and HEAD, not main-to-main (a full compare buries the real diff under unrelated commits).
-- Re-review only if the reviewed surface actually changed.
+- Re-review only if the reviewed surface changed; “PR updated” can be CI/bot churn.
+- After rebase, compare PR-touched files between reviewed SHA and HEAD, not main-to-main.
+- On re-review, check whether prior substantive feedback landed in code, tests, or merge-facing docs.
 
-**Bots & AI**
-- Bot/AI review comments may target a stale revision — confirm current HEAD still has the issue before relaying.
-- AI/bot-authored PRs: read the linked issue/RCA and verify substance; authorship is neither good nor bad.
+**Bots/AI**
+- Confirm bot comments apply to current HEAD before relaying.
+- Verify bot regression claims against the actual behavior delta; same contract shape may mean no new risk.
+- Bot authorship is neutral: verify substance.
 
-**Asks & nits**
-- Request changes only with concrete evidence and an actionable fix path; prefer one load-bearing ask over many minor ones.
-- Drop throughput-neutral nits (no effect on correctness, rollout, test signal, docs, or debugging) — signal rigor through high-value points, not volume.
-- Grep for existing precedent in the same surface before asking for a new test type; zero precedent raises the bar.
-- For procedural migrations (dependency managers, schema, codegen), load the relevant skill/checklist before reviewing — diff-reading alone misses config/pinning gaps.
+**Asks**
+- Prefer one load-bearing ask over many nits.
+- Drop throughput-neutral nits.
+- Ask for tests only after checking local precedent.
+- Re-derive style/default nits against local conventions and data flow.
 
-**Recurring bug shapes**
-- Cache/session keys must include every authorization dimension, or callers silently poison each other.
-- Excluding one adjustment from a money pipeline: start from the existing semantic total and undo only that adjustment; don't rebuild from a lower subtotal (drops taxes/duties/returns).
-- Normalize error shapes at the narrowest semantic boundary the contract needs; leave unrelated error paths alone.
-- Setup/test macros may select a backend, not just grant access — trace both the enqueue and the read side.
-- Rails `rescue_from` catches outside the `around_action` chain: tags set in a handler fire after the ensure block — keep error-path metrics inline or in a `before_action`.
+**Bug shapes**
+- Cache/session/storage keys need every caller/security dimension; cleanup must not broaden key selection.
+- Money pipelines: start from the semantic final total and undo one adjustment; don't rebuild from a lower subtotal.
+- Normalize errors at the narrowest semantic boundary; test multi-error bundles.
+- Test macros may select infrastructure, not just grant access; trace writer and reader sides.
+- Feature-gate cleanup: prove the gate exists in production, the kept branch is complete, and removed wrappers carried no public contract bits.
+- Authorization/resource checks need selector + grant/scope + exact resource id at enforcement.
+- Generated/deprecation recordings are executable expectations; update siblings whose emission source is gone.
 
-## 6. Draft — the author submits, not the agent
+## 6. Draft
 
-- Draft the review, show it, and auto-copy it to the clipboard (`pbcopy`) without being asked. Then stop — don't offer to submit/post on the user's behalf; they drive anything externally visible.
-- After amending code that changes the PR's visible behavior or scope, re-read the PR body and draft an updated description before Mark hand-edits it. Copy only; do not post unless explicitly instructed.
-- **Never submit, label, or resolve threads yourself.** Submit only on an explicit instruction to; the user runs the submit.
-- Lead with what's good; separate blockers from nits.
-- Inline comments: give `path:line`, one at a time. Don't hard-wrap prose — one physical line per paragraph or list item; let the host wrap.
+- Verdict and review body are one deliverable; don't state approve/block without copy-ready text.
+- Show the draft and copy it locally; the human submits externally visible actions unless explicitly told otherwise.
+- Give inline comments as `path:line`, one at a time.
+- Don't hard-wrap prose; let the host wrap.
 
-## 7. Cleanup & tally
+## 7. Finish
 
-- Release any isolated worktree/environment when the user is done with the PR (mechanics: session context).
-- Keep a running session tally: `| PR | Title | Action |`.
+- Record the session tally/log per local context.
+- Free isolated worktrees only after the user is done.
 
-## Learning & promotion
+## Learning
 
-Capture is employer-side by default: a mid-review lesson goes straight into the session context, raw with its evidence — don't edit this skill mid-review. Promote into this skill only as a separate, deliberate act: apply the guardrail above, restate as a general rule, and leave the dated evidence in the session-context log. Can't state it without employer content → not portable; it stays in the session context.
+Promote only employer-free, durable review craft here. Keep employer/domain lessons in local context. Unsure → keep local.

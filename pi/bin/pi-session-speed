@@ -15,6 +15,10 @@ const ROOT = join(homedir(), ".pi", "agent", "sessions");
 const toMs = (t) => (typeof t === "number" ? t : Date.parse(t));
 const IDLE_CAP_MIN = 5; // turns longer than this likely include idle/human time → flagged
 
+function keyForPath(path) {
+  return "--" + path.replace(/^\//, "").replace(/\//g, "-") + "--";
+}
+
 function resolve(arg) {
   if (arg && statSyncSafe(arg)) return arg;
   const all = [];
@@ -23,8 +27,15 @@ function resolve(arg) {
     try { for (const f of readdirSync(dir)) if (f.endsWith(".jsonl")) all.push(join(dir, f)); } catch {}
   }
   if (arg) return all.filter((f) => f.includes(arg)).sort(byMtime).pop();
-  const key = "--" + process.cwd().replace(/^\//, "").replace(/\//g, "-") + "--";
-  return all.filter((f) => f.includes(key)).sort(byMtime).pop();
+
+  const cwd = process.cwd();
+  const keys = [keyForPath(cwd)];
+
+  for (const key of keys) {
+    const hit = all.filter((f) => f.includes(key)).sort(byMtime).pop();
+    if (hit) return hit;
+  }
+  return all.sort(byMtime).pop();
 }
 const statSyncSafe = (p) => { try { return statSync(p); } catch { return null; } };
 const byMtime = (a, b) => statSync(a).mtimeMs - statSync(b).mtimeMs;
