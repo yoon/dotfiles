@@ -64,8 +64,8 @@ Don't just read the diff — verify it against the source:
 
 ## 6. Draft — the author submits, not the agent
 
-- Draft the review, show it, and auto-copy it to the clipboard (`pbcopy`) without being asked.
-- **Never submit, label, or resolve threads yourself.** Wait for explicit approval of both the action (approve / request-changes / comment) and the wording; the user runs the submit.
+- Draft the review, show it, and auto-copy it to the clipboard (`pbcopy`) without being asked. Then stop — don't offer to submit/post on the user's behalf; they drive anything externally visible.
+- **Never submit, label, or resolve threads yourself.** Submit only on an explicit instruction to; the user runs the submit.
 - Lead with what's good; separate blockers from nits.
 - Inline comments: give `path:line`, one at a time. Don't hard-wrap prose — one physical line per paragraph or list item; let the host wrap.
 

@@ -38,7 +38,7 @@ Show the exact content and wait for explicit approval before executing any actio
 
 Externally visible actions include anything that creates, modifies, or sends content others can see — pull requests and PR comments/reviews, pushes to a remote, published docs, emails, calendar events, chat messages.
 
-Workflow: draft the content → show it (and copy it to the clipboard with `pbcopy`) → wait for explicit "yes" / approval → then execute.
+Workflow: draft the content → show it (and copy it to the clipboard with `pbcopy`) → stop. Never offer to post/execute on my behalf — I drive anything externally visible. Execute only if I explicitly tell you to.
 
 Auto-copy the draft when you present it (no need to ask) — clipboard is local, not the gated action. One draft per clipboard payload.
 
