@@ -58,6 +58,7 @@ Portable improvements to how I work should accrue to my personal dotfiles automa
 ## Tool Use
 
 - **Batch tool calls to cut round-trips.** Independent reads/greps go in one turn (parallel tool calls), not serially. Prefer one shell call over many — `cat`/`rg`/`grep` across multiple files/dirs in a single `bash` rather than repeated `read`s. When reviewing a PR or a known file, read the diff/file up front instead of hunting for it across many calls. Each tool call is a serial model round-trip; fewer round-trips = faster.
+- When validating with a command whose output is piped/truncated for display, preserve the original exit status. Prefer `cmd >out 2>err; status=$?; head ...; exit $status`. Do not append `&& echo OK` after `| head` unless `pipefail` or explicit status capture makes failures visible.
 
 ## Before Writing Code
 

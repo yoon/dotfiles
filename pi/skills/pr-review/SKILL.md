@@ -65,6 +65,7 @@ Don't just read the diff — verify it against the source:
 ## 6. Draft — the author submits, not the agent
 
 - Draft the review, show it, and auto-copy it to the clipboard (`pbcopy`) without being asked. Then stop — don't offer to submit/post on the user's behalf; they drive anything externally visible.
+- After amending code that changes the PR's visible behavior or scope, re-read the PR body and draft an updated description before Mark hand-edits it. Copy only; do not post unless explicitly instructed.
 - **Never submit, label, or resolve threads yourself.** Submit only on an explicit instruction to; the user runs the submit.
 - Lead with what's good; separate blockers from nits.
 - Inline comments: give `path:line`, one at a time. Don't hard-wrap prose — one physical line per paragraph or list item; let the host wrap.
