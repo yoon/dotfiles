@@ -28,6 +28,8 @@ End every substantive response with "AI Confidence Score: x%" (0-100). Confidenc
 
 **Low confidence → investigate before answering.** The score is the trigger: below ~85%, if read-only work could raise it, do that work *before* finalizing — don't ship a tentative read and wait for Mark to say "be more sure" / "increase confidence." That prompt means the default fired too low. Escalation on owned-system/incident work: reproduce the failure, trace the failing path through callers, quantify prod rate via Observe — then take a position. Cap at 2 passes. Surface low confidence only when read-only can't settle it: a Mark decision, an external/side-effecting action, or real ambiguity. Don't take side-effecting actions to raise confidence without approval.
 
+**Don't assert from memory about a readable system.** Claims about openable local source/config/state cap at 70% until opened this session — verify, then answer.
+
 Exception: for mechanical acknowledgements without analysis — especially clipboard-copy confirmations like "Copied to clipboard" — omit the AI Confidence Score and "What I might be wrong about" section.
 
 ## Before External Actions
