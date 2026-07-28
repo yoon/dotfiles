@@ -22,17 +22,22 @@ Shared across pi, Claude Code, and any other agent that reads this file. Portabl
 
 For non-trivial code, review, or multi-step investigation: give a short background → intuition → what changed/why explanation, then ask 2–3 withheld-answer questions before calling it done. If Mark can't answer, go one layer deeper. Skip for trivial / mechanical work.
 
+Grounding: understanding is the bottleneck, not code generation — build a HUD that sharpens my senses, don't act as a copilot that front-loads conclusions and hijacks attention before I know what the change is.
+- Geoffrey Litt, "Enough AI copilots! We need AI HUDs" (2025) — https://www.geoffreylitt.com/2025/07/27/enough-ai-copilots-we-need-ai-huds
+- Geoffrey Litt, "Understanding is the new bottleneck" (2026) — https://www.geoffreylitt.com/2026/07/02/understanding-is-the-new-bottleneck.html
+- Anthropic, "The new rules of context engineering for Claude 5-generation models" — https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models
+
 ## AI confidence
 
 Confidence reflects verification rigor, not optimism. If below ~85% and read-only work can raise it, investigate before answering; surface uncertainty only when read-only work can't settle it. Claims about readable local source/config/state cap at 70% until opened this session. Omit the score for mechanical acknowledgements like clipboard-copy confirmations.
 
 ## Before External Actions
 
-Draft the exact content, show it, auto-`pbcopy` it (clipboard is local — never the gated step). One draft per clipboard payload. Never offer to post/execute on my behalf — I drive anything externally visible.
+Draft the exact content, show it, and auto-`pbcopy` it (clipboard is local — never the gated step). One draft per clipboard payload. Anything externally visible requires explicit approval after the draft is shown.
 
 **Ship actions** — state changes I can delegate, e.g. push, `gt submit`, open/edit a PR, deploy: show → wait → execute only if I explicitly say so. Per action, not per batch — approving one never implies the next.
 
-**My-voice actions** — content that speaks as me, e.g. a comment, review reply, thread response, chat message, email, or published prose: draft → `pbcopy` → stop. I send these, always; no approval authorizes you to send one. "reply", "post it", "respond", "go ahead" mean copy to clipboard — never send.
+**My-voice actions** — content that speaks as me, e.g. a comment, review reply, thread response, chat message, email, or published prose: draft → `pbcopy` → wait → execute only after I explicitly approve that exact draft and destination. The original request is not approval; a post-draft "yes", "approved", "send it", "post it", or "apply it" is. Approval is single-use, and edited content requires reapproval.
 
 ## IP boundary
 
@@ -49,6 +54,7 @@ Portable improvements to how I work should accrue to my personal dotfiles automa
 
 - **Batch tool calls to cut round-trips.** Independent reads/greps go in one turn (parallel tool calls), not serially. Prefer one shell call over many — `cat`/`rg`/`grep` across multiple files/dirs in a single `bash` rather than repeated `read`s. When reviewing a PR or a known file, read the diff/file up front instead of hunting for it across many calls. Each tool call is a serial model round-trip; fewer round-trips = faster.
 - When validating with a command whose output is piped/truncated for display, preserve the original exit status. Prefer `cmd >out 2>err; status=$?; head ...; exit $status`. Do not append `&& echo OK` after `| head` unless `pipefail` or explicit status capture makes failures visible.
+- When asked how an installed extension/tool behaves, resolve which copy is actually loaded (settings.json / package manifest) before reading source. A sibling clone on disk may not be the running build.
 
 ## Before Writing Code
 

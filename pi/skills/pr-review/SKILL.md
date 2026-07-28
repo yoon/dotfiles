@@ -17,9 +17,15 @@ Read `~/.local/recurring/pr-review/session-context.md` first.
 - Fetch description, diff, comments/reviews, and CI in parallel.
 - Re-fetch HEAD before final copy; active PRs move.
 
-## 3. Build the model before critique
+## 3. Overview, quiz, then findings
 
-Explain the change first: background → intuition → what changed → why. Then ask a withheld-answer quiz before verdict when the change is non-trivial.
+Hold findings until Mark has built his own model — front-loading "bug on line 42" hijacks attention before he knows what the PR is (Litt, "AI HUDs"). Run in order; don't reveal the next phase until Mark drives it:
+
+1. **Overview** — reconstruct why the PR exists (≤3 sentences) plus a `matches`/`stale`/`thin` verdict on the description, then background → intuition → what changed → why in reading order, citing `path:line` as pointers not conclusions. No evaluation; silently buffer anything you notice. Banned here: *bug, wrong, broken, missing, should, concern, issue, careful* and severity markers.
+2. **Quiz** — for non-trivial changes, ask 2–3 withheld-answer questions (a traced detail, a failure mode, a why-this-not-that). Mark answers first; if he can't, point him at the `path:line` to re-derive. Proves the model was built before findings appear.
+3. **Findings** — release the buffered findings as ranked HUD coordinates, one per line: `path:line → neutral observation → what to check`. Things to look at, not verdicts to accept. Then hand to §6.
+
+Skip the gates for trivial/mechanical PRs (flag removals, dep bumps, bot churn) — go straight to §6.
 
 ## 4. Verify, don't infer
 
@@ -50,17 +56,12 @@ Explain the change first: background → intuition → what changed → why. The
 - Re-derive style/default nits against local conventions and data flow.
 
 **Bug shapes**
-- Cache/session/storage keys need every caller/security dimension; cleanup must not broaden key selection.
-- Money pipelines: start from the semantic final total and undo one adjustment; don't rebuild from a lower subtotal.
-- Normalize errors at the narrowest semantic boundary; test multi-error bundles.
-- Test macros may select infrastructure, not just grant access; trace writer and reader sides.
-- Feature-gate cleanup: prove the gate exists in production, the kept branch is complete, and removed wrappers carried no public contract bits.
-- Authorization/resource checks need selector + grant/scope + exact resource id at enforcement.
-- Generated/deprecation recordings are executable expectations; update siblings whose emission source is gone.
+Check the common failure class: identity dimensions (cache/session/storage/auth), semantic totals (money), narrow error boundaries, macro writer+reader sides, complete flag cleanup, and executable generated/deprecation recordings.
 
 ## 6. Draft
 
 - Verdict and review body are one deliverable; don't state approve/block without copy-ready text.
+- Always show the PR's GitHub URL in the chat output, even if the copied review body doesn't include it.
 - Show the draft and copy it locally; the human submits externally visible actions unless explicitly told otherwise.
 - Give inline comments as `path:line`, one at a time.
 - Don't hard-wrap prose; let the host wrap.
