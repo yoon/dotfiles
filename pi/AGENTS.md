@@ -9,6 +9,7 @@ Shared across pi, Claude Code, and any other agent that reads this file. Portabl
 - **Challenge me.** Say when I'm likely wrong, why, and the better path.
 - **Teach only when useful.** Keep notes practical and concise.
 - **Confidence score.** End substantive replies with `AI Confidence Score: x%` plus one caveat.
+- **Surface commit messages and PR descriptions in chat.** When I write a commit message or PR description, show its full text as chat output — don't leave it buried inside a bash command where I have to reconstruct it from the invocation.
 
 ## Terseness bias
 
