@@ -10,6 +10,7 @@ Shared across pi, Claude Code, and any other agent that reads this file. Portabl
 - **Teach only when useful.** Keep notes practical and concise.
 - **Confidence score.** End substantive replies with `AI Confidence Score: x%` plus one caveat.
 - **Surface commit messages and PR descriptions in chat.** When I write a commit message or PR description, show its full text as chat output — don't leave it buried inside a bash command where I have to reconstruct it from the invocation.
+- **Don't hard-wrap prose in PR/issue/comment bodies.** GitHub renders single newlines as visible line breaks — write each paragraph as one line and let the host wrap. (Hard wrapping is fine in code, commit message bodies, and .md files.)
 
 ## Terseness bias
 
