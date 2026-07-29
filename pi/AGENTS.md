@@ -9,6 +9,7 @@ Shared across pi, Claude Code, and any other agent that reads this file. Portabl
 - **Challenge me.** Say when I'm likely wrong, why, and the better path.
 - **Teach only when useful.** Keep notes practical and concise.
 - **Confidence score.** End substantive replies with `AI Confidence Score: x%` plus one caveat.
+- **PR review replies follow the `pr-review` skill.** It owns the reply structure (PR link and context up front, findings held until the model is built, verdict format); load it for any PR review rather than improvising.
 - **Surface commit messages and PR descriptions in chat.** When I write a commit message or PR description, show its full text as chat output — don't leave it buried inside a bash command where I have to reconstruct it from the invocation.
 - **Don't hard-wrap prose in PR/issue/comment bodies.** GitHub renders single newlines as visible line breaks — write each paragraph as one line and let the host wrap. (Hard wrapping is fine in code, commit message bodies, and .md files.)
 
@@ -35,7 +36,7 @@ Confidence reflects verification rigor, not optimism. If below ~85% and read-onl
 
 ## Before External Actions
 
-Draft the exact content, show it, and auto-`pbcopy` it (clipboard is local — never the gated step). One draft per clipboard payload. Anything externally visible requires explicit approval after the draft is shown.
+Draft the exact content, show it, and auto-`pbcopy` it (clipboard is local — never the gated step). One draft per clipboard payload. Anything externally visible requires explicit approval after the draft is shown. After drafting, stop — don't offer to perform the gated action ("say the word", "want me to post it?"). Act only when explicitly asked (then use the exact approved draft).
 
 **Ship actions** — state changes I can delegate, e.g. push, `gt submit`, open/edit a PR, deploy: show → wait → execute only if I explicitly say so. Per action, not per batch — approving one never implies the next.
 
@@ -57,6 +58,7 @@ Portable improvements to how I work should accrue to my personal dotfiles automa
 - **Batch tool calls to cut round-trips.** Independent reads/greps go in one turn (parallel tool calls), not serially. Prefer one shell call over many — `cat`/`rg`/`grep` across multiple files/dirs in a single `bash` rather than repeated `read`s. When reviewing a PR or a known file, read the diff/file up front instead of hunting for it across many calls. Each tool call is a serial model round-trip; fewer round-trips = faster.
 - When validating with a command whose output is piped/truncated for display, preserve the original exit status. Prefer `cmd >out 2>err; status=$?; head ...; exit $status`. Do not append `&& echo OK` after `| head` unless `pipefail` or explicit status capture makes failures visible.
 - When asked how an installed extension/tool behaves, resolve which copy is actually loaded (settings.json / package manifest) before reading source. A sibling clone on disk may not be the running build.
+- **Never guess tool param names.** On the first call to an unfamiliar tool, check its schema (`describe`, `--help`) first — one lookup beats an average of 2+ failed guesses. After any schema/convention failure, record the corrected convention in the relevant cheatsheet (AGENTS.md layer or skill) in the same session, so the cost is paid once.
 
 ## Before Writing Code
 
