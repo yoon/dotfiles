@@ -49,10 +49,18 @@ function turns(path) {
     if (role === "user") {
       const text = (e.message.content ?? []).filter((c) => c.type === "text").map((c) => c.text).join(" ").trim();
       if (!text) continue;
-      cur = { prompt: text, start: ts, end: ts, model: "", out: 0, reason: 0 }; out.push(cur);
+      cur = { prompt: text, start: ts, end: ts, model: "", out: 0, reason: 0, tools: 0, chars: 0 }; out.push(cur);
     } else if (cur && (role === "assistant" || role === "toolResult")) {
       cur.end = Math.max(cur.end, ts);
-      if (role === "assistant") { cur.model = e.message.model || cur.model; cur.out += e.message.usage?.output ?? 0; cur.reason += e.message.usage?.reasoning ?? 0; }
+      if (role === "assistant") {
+        cur.model = e.message.model || cur.model;
+        cur.out += e.message.usage?.output ?? 0;
+        cur.reason += e.message.usage?.reasoning ?? 0;
+        for (const c of e.message.content ?? []) {
+          if (c.type === "toolCall") cur.tools += 1;
+          if (c.type === "text") cur.chars += c.text?.length ?? 0;
+        }
+      }
     }
   }
   return out;
@@ -62,11 +70,11 @@ function report(path) {
   const ts = turns(path);
   let total = 0, out = 0, reason = 0;
   console.log(`\n${path.split("/").pop()}  (${ts.length} turns)`);
-  console.log(`  min   out    reason  model                prompt`);
+  console.log(`  min   out    reason tools  chars  model                prompt`);
   for (const t of ts) {
     const min = (t.end - t.start) / 60000; total += min; out += t.out; reason += t.reason;
     const flag = min > IDLE_CAP_MIN ? "⚠" : " ";
-    console.log(`  ${min.toFixed(1).padStart(5)}${flag}${String(t.out).padStart(6)} ${String(t.reason).padStart(6)}  ${(t.model || "?").padEnd(20).slice(0,20)} ${t.prompt.replace(/\s+/g," ").slice(0,44)}`);
+    console.log(`  ${min.toFixed(1).padStart(5)}${flag}${String(t.out).padStart(6)} ${String(t.reason).padStart(6)} ${String(t.tools).padStart(5)} ${String(t.chars).padStart(6)}  ${(t.model || "?").padEnd(20).slice(0,20)} ${t.prompt.replace(/\s+/g," ").slice(0,44)}`);
   }
   console.log(`  ── ${total.toFixed(1)} min · ${out} out-tok · ${reason} reason-tok · ⚠=possible idle (>${IDLE_CAP_MIN}min)`);
   return { total, out, reason, n: ts.length };
