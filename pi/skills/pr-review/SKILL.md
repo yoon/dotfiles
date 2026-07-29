@@ -17,17 +17,7 @@ Read `~/.local/recurring/pr-review/session-context.md` first.
 - Fetch description, diff, comments/reviews, and CI in parallel.
 - Re-fetch HEAD before final copy; active PRs move.
 
-## 3. Overview, quiz, then findings
-
-Hold findings until Mark has built his own model — front-loading "bug on line 42" hijacks attention before he knows what the PR is (Litt, "AI HUDs"). Run in order; don't reveal the next phase until Mark drives it:
-
-1. **Overview** — reconstruct why the PR exists (≤3 sentences) plus a `matches`/`stale`/`thin` verdict on the description, then background → intuition → what changed → why in reading order, citing `path:line` as pointers not conclusions. No evaluation; silently buffer anything you notice. Banned here: *bug, wrong, broken, missing, should, concern, issue, careful* and severity markers.
-2. **Quiz** — for non-trivial changes, ask 2–3 withheld-answer questions (a traced detail, a failure mode, a why-this-not-that). Mark answers first; if he can't, point him at the `path:line` to re-derive. Proves the model was built before findings appear.
-3. **Findings** — release the buffered findings as ranked HUD coordinates, one per line: `path:line → neutral observation → what to check`. Things to look at, not verdicts to accept. Then hand to §6.
-
-Skip the gates for trivial/mechanical PRs (flag removals, dep bumps, bot churn) — go straight to §6.
-
-## 4. Verify, don't infer
+## 3. Verify, don't infer
 
 - Verify every PR-description claim against the diff.
 - Trace at least one detail through callers/callees by hand.
@@ -37,7 +27,7 @@ Skip the gates for trivial/mechanical PRs (flag removals, dep bumps, bot churn) 
 - For macro/helper behavior, trace the expansion/initializer before judging coverage.
 - For procedural migrations, load the relevant checklist/skill; diff-reading alone misses config and generated edges.
 
-## 5. Heuristics
+## 4. Heuristics
 
 **Freshness**
 - Re-review only if the reviewed surface changed; “PR updated” can be CI/bot churn.
@@ -58,18 +48,26 @@ Skip the gates for trivial/mechanical PRs (flag removals, dep bumps, bot churn) 
 **Bug shapes**
 Check the common failure class: identity dimensions (cache/session/storage/auth), semantic totals (money), narrow error boundaries, macro writer+reader sides, complete flag cleanup, and executable generated/deprecation recordings.
 
-## 6. Draft
+## 5. Overview, then quiz
 
-- Verdict and review body are one deliverable; don't state approve/block without copy-ready text.
-- Always show the PR's GitHub URL in the chat output, even if the copied review body doesn't include it.
-- Show the draft and copy it locally; the human submits externally visible actions unless explicitly told otherwise.
-- Give inline comments as `path:line`, one at a time.
+Do the analysis above and hold the findings until the user has read the overview and built their own mental model — front-loading "bug on line 42" hijacks attention before they know what the PR is (Geoffrey Litt, ["Enough AI copilots! We need AI HUDs"](https://www.geoffreylitt.com/2025/07/27/enough-ai-copilots-we-need-ai-huds) — be the instrument panel that sharpens the reviewer's senses, not the copilot that reviews for them). Don't reveal the next phase until asked or the quiz is answered:
+
+1. **Overview** — start by displaying the GitHub PR URL as a link. Reconstruct why the PR exists (≤3 sentences) plus a `matches`/`stale`/`thin` verdict on the description, then background → intuition → what changed → why in reading order, citing `path:line` as pointers not conclusions. No evaluation yet: avoid *bug, wrong, broken, missing, should, concern, issue, careful* and severity markers.
+2. **Quiz** — for non-trivial changes, ask 2–3 withheld-answer questions (a traced detail, a failure mode, a why-this-not-that). The user answers first; if they can't, point them at the `path:line` to re-derive. Proves the model was built before findings appear.
+
+Skip the Overview and Quiz for trivial/mechanical PRs (flag removals, dep bumps, bot churn) and go straight to the verdict.
+
+## 6. Verdict and draft
+
+- Release the buffered findings as a ranked list, most load-bearing first, one per line: `path:line → neutral observation → what to check`. Coordinates to look at, not verdicts to accept.
+- Give the verdict (approve / request changes / comment), suggestions, and copy-ready review body. If the Overview was skipped, open with the PR's GitHub URL and a one-line recap so the reply still leads with the link and context.
+- Show the draft and copy it locally, then stop. Don't offer to submit; submit only when explicitly asked.
 - Don't hard-wrap prose; let the host wrap.
+- Give inline comments as `path:line`, one at a time.
 
 ## 7. Finish
 
-- Record the session tally/log per local context.
-- Free isolated worktrees only after the user is done.
+- When the user signals they submitted/approved, auto-run both finish steps in the same turn without asking: record the log, then free the isolated worktree. The user can suppress either per-review; absent that, both are automatic. (Log location/format and worktree tooling per local context.)
 
 ## Learning
 
