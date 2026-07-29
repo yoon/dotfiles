@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# pi-reflect-transcript — clean text transcript for one pi session JSONL.
+# Usage: pi-reflect-transcript [--compact-agent] [SESSION]
+set -euo pipefail
+root=~/.pi/agent/sessions
+compact=false
+if [[ "${1:-}" == "--compact-agent" ]]; then
+  compact=true
+  shift
+fi
+
+newest_all() {
+  find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
+}
+
+key_for_path() {
+  local p="${1#/}"
+  p="${p//\//-}"
+  printf '%s' "--$p--"
+}
+
+resolve() {
+  local arg="${1:-}"
+  if [[ -n "$arg" && -f "$arg" ]]; then echo "$arg"; return; fi
+  if [[ -n "$arg" ]]; then
+    find "$root" -name "*$arg*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
+    return
+  fi
+
+  local key hit
+  key="$(key_for_path "$PWD")"
+  hit="$(ls -t "$root/$key"/*.jsonl 2>/dev/null | head -1 || true)"
+  [[ -n "$hit" ]] && { echo "$hit"; return; }
+
+  newest_all
+}
+
+f="$(resolve "${1:-}")"
+[[ -n "$f" && -f "$f" ]] || { echo "no session file found (arg: '${1:-}')" >&2; exit 1; }
+echo "session_file: $f"
+
+if $compact; then
+  jq -r '
+    def redact:
+      gsub("PI_PROXY_API_KEY=[^\\n]+"; "PI_PROXY_API_KEY=<redacted>") |
+      gsub("PI_PROXY_AUTH_HEADER=[^\\n]+"; "PI_PROXY_AUTH_HEADER=<redacted>");
+    def text: [ .message.content[]? | select(.type=="text") | .text ] | join("\n") | redact;
+    def tool_arg:
+      .arguments as $a |
+      ($a.command // $a.query // $a.path // $a.tool_name // ($a | tostring)) |
+      tostring | gsub("\\s+"; " ") | .[0:80];
+
+    select(.type=="message") |
+    .message.role as $role |
+    if $role=="toolResult" then
+      text as $body |
+      ($body | test("(?im)^(error during|vault mcp error:|no results found\\.?$|found 0 of)")) as $reported_error |
+      (($body | split("\n") | map(select(length>0)) | .[0]) // "") as $preview |
+      "\n### toolResult\n«toolResult:" + (.message.toolName // "?") + "» " +
+      (if (.message.isError // false) or $reported_error then "error" else "ok" end) + " · " +
+      (if $body=="" then "0" else ($body | split("\n") | length | tostring) end) + " lines · " +
+      ($body | length | tostring) + " chars · jsonl line " + (input_line_number | tostring) +
+      (if (.message.isError // false) or $reported_error then "\n" + $body[0:600]
+       elif $preview!="" then "\npreview: " + $preview[0:80]
+       else "" end)
+    else
+      ([ .message.content[]?
+         | if .type=="text" then .text
+           elif .type=="toolCall" then "«tool:" + .name + "» " + tool_arg
+           else empty end ] | join("\n") | redact) as $body |
+      select($body | length>0) |
+      "\n### " + $role + "\n" + $body
+    end
+  ' "$f"
+  exit
+fi
+
+jq -r '
+  select(.type=="message") |
+  .message.role as $r |
+  ( [ .message.content[]?
+      | if .type=="text" then .text
+        elif .type=="thinking" then "«thinking» " + (.thinking[0:400])
+        elif .type=="toolCall" then "«tool:" + .name + "» " + (.arguments|tostring|.[0:200])
+        else empty end ] | join("\n") ) as $body |
+  ($body
+    | gsub("PI_PROXY_API_KEY=[^\\n]+"; "PI_PROXY_API_KEY=<redacted>")
+    | gsub("PI_PROXY_AUTH_HEADER=[^\\n]+"; "PI_PROXY_AUTH_HEADER=<redacted>")
+  ) as $safe |
+  select($safe|length>0) |
+  "\n### " + $r + "\n" + $safe
+' "$f"

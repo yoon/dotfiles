@@ -7,40 +7,19 @@ This is a retrospective on **how Mark and the agent worked together**, not a red
 
 ## 1. Load the session
 
-Run the quantitative pass (shows which file it picked — confirm it's the one intended):
+Run the three session views and confirm they picked the intended file:
 
 ```bash
 ~/.local/bin/pi-reflect-stats "${1:-}"
+~/.local/bin/pi-session-speed "${1:-}"       # ⚠ >5min = likely idle, not compute
+~/.local/bin/pi-reflect-transcript "${1:-}"
 ```
 
-Then read the actual transcript as clean text (drop the stats file's path from the output above into `$F`):
-
-```bash
-F="<session_file from stats output>"
-jq -r '
-  select(.type=="message") |
-  .message.role as $r |
-  ( [ .message.content[]?
-      | if .type=="text" then .text
-        elif .type=="thinking" then "«thinking» " + (.thinking[0:400])
-        elif .type=="toolCall" then "«tool:" + .name + "» " + (.arguments|tostring|.[0:200])
-        else empty end ] | join("\n") ) as $body |
-  select($body|length>0) |
-  "\n### " + $r + "\n" + $body
-' "$F"
-```
-
-For the per-turn time/token/model view (and idle-turn flags), also run:
-
-```bash
-~/.local/bin/pi-session-speed "${1:-}"   # ⚠ flags >5min turns = likely idle, not compute
-```
-
-Read the whole transcript. Do not skim — the lessons live in the friction, corrections, and repeated instructions.
+Read the whole transcript. Do not skim — the lessons live in friction, corrections, and repeated instructions.
 
 ## 2. Analyze across these axes
 
-Build on the grounded baseline in `~/.local/recurring/reflection/session-context.md` (it auto-loads) — don't re-derive known truths. **Measured ranking of what drives wall-clock: tool round-trips ≫ output length > thinking level ≫ model choice.** Use the stats for quantitative axes, the transcript for qualitative. Be specific — cite the turn or command, not "communication could improve."
+Build on `~/.local/recurring/reflection/session-context.md`; don't re-derive known truths. Use stats for quantitative axes and the transcript for qualitative ones. Be specific — cite the turn or command, not "communication could improve."
 
 - **Faster? (the headline lever.)** Round-trips dominate wall-clock. Check tool-calls-per-prompt (`pi-session-speed`): 10–23/prompt is the norm and mostly avoidable. Look for serial reads/greps that should've been one parallel turn or one shell call (`cat`/`rg`/`wg`), re-reading the same files, hunting for a file/diff that could've been primed up front, and `tool_errors`/redone work. Ignore idle time (⚠ turns) — that's Mark thinking, not the agent.
 - **Terser?** Output length is the #2 driver and model-agnostic. Any wall-of-text, restated question, or preamble that violated terse-by-default? Cite it.
