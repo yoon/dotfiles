@@ -55,6 +55,8 @@ Portable improvements to how I work should accrue to my personal dotfiles automa
 
 ## Tool Use
 
+- **Video referenced as evidence: obtain and watch it first** (ask me to download it if unfetchable) before drafting conclusions. Analyze via ffmpeg frame extraction, downscaled (`-vf "fps=1/5,scale=800:-1"`), frames read in batches; treat recordings as point-in-time evidence, not current state.
+
 - **Batch tool calls to cut round-trips.** Independent reads/greps go in one turn (parallel tool calls), not serially. Prefer one shell call over many — `cat`/`rg`/`grep` across multiple files/dirs in a single `bash` rather than repeated `read`s. When reviewing a PR or a known file, read the diff/file up front instead of hunting for it across many calls. Each tool call is a serial model round-trip; fewer round-trips = faster.
 - When validating with a command whose output is piped/truncated for display, preserve the original exit status. Prefer `cmd >out 2>err; status=$?; head ...; exit $status`. Do not append `&& echo OK` after `| head` unless `pipefail` or explicit status capture makes failures visible.
 - When asked how an installed extension/tool behaves, resolve which copy is actually loaded (settings.json / package manifest) before reading source. A sibling clone on disk may not be the running build.
