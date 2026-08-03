@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# pi-reflect-ledger — compact event ledger of one pi session JSONL.
+# Prints every user turn (truncated), every tool call with truncated args,
+# and compaction markers. Complements pi-reflect-stats (quantitative) and
+# pi-reflect-transcript (full text, may exceed output caps on long sessions).
+# Usage: pi-reflect-ledger [SESSION]
+#   SESSION = path to .jsonl | partial session id | (omitted → newest session for $PWD)
+set -euo pipefail
+root=~/.pi/agent/sessions
+
+newest_all() {
+  find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
+}
+
+key_for_path() {
+  local p="${1#/}"
+  p="${p//\//-}"
+  printf '%s' "--$p--"
+}
+
+resolve() {
+  local arg="${1:-}"
+  if [[ -n "$arg" && -f "$arg" ]]; then echo "$arg"; return; fi
+  if [[ -n "$arg" ]]; then
+    find "$root" -name "*$arg*.jsonl" -print0 2>/dev/null \
+      | xargs -0 ls -t 2>/dev/null | head -1; return
+  fi
+
+  local key hit
+  key="$(key_for_path "$PWD")"
+  hit="$(ls -t "$root/$key"/*.jsonl 2>/dev/null | head -1 || true)"
+  [[ -n "$hit" ]] && { echo "$hit"; return; }
+
+  newest_all
+}
+
+f="$(resolve "${1:-}")"
+[[ -n "$f" && -f "$f" ]] || { echo "no session file found (arg: '${1:-}')" >&2; exit 1; }
+echo "session_file: $f"
+
+python3 - "$f" <<'EOF'
+import json, sys
+
+USER_W, ARG_W = 160, 110
+n = 0
+for line in open(sys.argv[1]):
+    try:
+        e = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+    t = e.get("type")
+    if t == "compaction":
+        print("=== COMPACTION ===")
+        continue
+    if t != "message":
+        continue
+    m = e.get("message", {})
+    role = m.get("role")
+    c = m.get("content")
+    if role == "user":
+        txt = c if isinstance(c, str) else " ".join(
+            x.get("text", "") for x in (c or [])
+            if isinstance(x, dict) and x.get("type") == "text"
+        )
+        if txt.strip():
+            n += 1
+            print(f"--- USER {n}: {txt[:USER_W]!r}")
+    elif role == "assistant" and isinstance(c, list):
+        for x in c:
+            if x.get("type") in ("toolCall", "tool_use"):
+                name = x.get("name") or x.get("toolName")
+                args = json.dumps(x.get("input") or x.get("arguments") or {})[:ARG_W]
+                print(f"  TOOL {name} {args}")
+EOF
