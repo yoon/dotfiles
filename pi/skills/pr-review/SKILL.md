@@ -14,8 +14,11 @@ Read `~/.local/recurring/pr-review/session-context.md` first.
 ## 2. Load the PR
 
 - Claim any isolated worktree before reading files.
-- Fetch description, diff, comments/reviews, and CI in parallel.
-- Re-fetch HEAD before final copy; active PRs move.
+- Batch the initial evidence sweep: fetch PR metadata, comments/reviews, CI, full diff, changed-file instructions, direct callers, adapters, and relevant tests in parallel.
+- For non-World repositories, make the first checkout sweep collect repository instructions, package/CI scripts, changed source, direct callers, and relevant tests. Run only repository-declared validation; do not invent typecheck or lint commands.
+- For type, value-object, or polymorphic-context migrations, search every production consumer of the changed field/key and verify each downstream input contract before the first verdict. Treat incident call sites as examples, not scope.
+- Re-read source only when HEAD changed or the first pass left a named uncertainty.
+- Before presenting findings, refresh HEAD, comments, and CI, then adversarially recheck signatures and error contracts.
 
 ## 3. Verify, don't infer
 
@@ -26,6 +29,16 @@ Read `~/.local/recurring/pr-review/session-context.md` first.
 - For perf/cache claims, prove the primitive in the smallest runnable setup; test cold and warm paths.
 - For macro/helper behavior, trace the expansion/initializer before judging coverage.
 - For procedural migrations, load the relevant checklist/skill; diff-reading alone misses config and generated edges.
+
+### Blocker proof gate
+
+Before surfacing or drafting a blocking finding, verify:
+
+1. **Trigger** — the suspected failure can occur through the actual implementation.
+2. **Propagation** — trace every adapter, Result conversion, rescue, and fallback.
+3. **Impact** — identify the concrete caller-visible or user-visible consequence.
+
+An unverified link is an investigation task, not a finding.
 
 ## 4. Heuristics
 
@@ -42,6 +55,7 @@ Read `~/.local/recurring/pr-review/session-context.md` first.
 **Asks**
 - Prefer one load-bearing ask over many nits.
 - Drop throughput-neutral nits.
+- Apply a hassle gate before drafting: only ask for work that materially increases correctness confidence. A true observation with no worthwhile action is not a review comment.
 - Ask for tests only after checking local precedent.
 - Re-derive style/default nits against local conventions and data flow.
 
@@ -55,10 +69,11 @@ Do the analysis above and hold the findings until the user has read the overview
 1. **Overview** — start by displaying the GitHub PR URL as a link. Reconstruct why the PR exists (≤3 sentences) plus a `matches`/`stale`/`thin` verdict on the description, then background → intuition → what changed → why in reading order, citing `path:line` as pointers not conclusions. No evaluation yet: avoid *bug, wrong, broken, missing, should, concern, issue, careful* and severity markers.
 2. **Quiz** — for non-trivial changes, ask 2–3 withheld-answer questions (a traced detail, a failure mode, a why-this-not-that). The user answers first; if they can't, point them at the `path:line` to re-derive. Proves the model was built before findings appear.
 
-Skip the Overview and Quiz for trivial/mechanical PRs (flag removals, dep bumps, bot churn) and go straight to the verdict.
+Skip the Overview and Quiz for trivial/mechanical PRs (flag removals, dep bumps, bot churn, and display-only refactors that leave execution/results unchanged with focused boundary coverage) and go straight to the verdict.
 
 ## 6. Verdict and draft
 
+- Do not draft copy-ready review comments until the verdict is stable and the blocker proof gate is complete.
 - Release the buffered findings as a ranked list, most load-bearing first, one per line: `path:line → neutral observation → what to check`. Coordinates to look at, not verdicts to accept.
 - Give the verdict (approve / request changes / comment), suggestions, and copy-ready review body. If the Overview was skipped, open with the PR's GitHub URL and a one-line recap so the reply still leads with the link and context.
 - Show the draft and copy it locally, then stop. Don't offer to submit; submit only when explicitly asked.
@@ -67,7 +82,8 @@ Skip the Overview and Quiz for trivial/mechanical PRs (flag removals, dep bumps,
 
 ## 7. Finish
 
-- When the user signals they submitted/approved, auto-run both finish steps in the same turn without asking: record the log, then free the isolated worktree. The user can suppress either per-review; absent that, both are automatic. (Log location/format and worktree tooling per local context.)
+- When the user signals they submitted/approved, first verify that their approval exists on the current HEAD. Only then auto-run both finish steps in the same turn without asking: record the log, then free the isolated worktree. If verification fails, retain the worktree and distinguish an approved verdict from a submitted approval. The user can suppress either per-review; absent that, both are automatic. (Log location/format and worktree tooling per local context.)
+- Temporary-checkout cleanup must be idempotent: an absent path is already clean and must not fail logging or completion.
 
 ## Learning
 
