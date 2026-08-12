@@ -34,6 +34,7 @@ link shell/shrc         "$HOME/.shrc"                 # portable aliases (see sh
 link pi/prompts/reflect.md   "$HOME/.pi/agent/prompts/reflect.md"                # /reflect session retro
 link pi/bin/pi-reflect-stats "$HOME/.local/bin/pi-reflect-stats"                 # session stats (jq)
 link pi/bin/pi-session-speed "$HOME/.local/bin/pi-session-speed"                 # per-turn timing (node)
+link pi/bin/pbcopy-rich "$HOME/.local/bin/pbcopy-rich"                           # rich-text clipboard for Google Docs
 link pi/extensions/route-model.ts "$HOME/.pi/agent/extensions/route-model.ts.disabled" # model routing (off)
 link pi/extensions/speed.ts       "$HOME/.pi/agent/extensions/speed.ts.disabled"       # speed gears (off)
 # ─────────────────────────────────────────────────────────────────────────────

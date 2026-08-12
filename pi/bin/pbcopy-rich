@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Copy Markdown-ish text to the macOS clipboard as RTF."""
+
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+
+TOKEN = re.compile(r"\[([^]]+)]\((https?://[^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`")
+
+
+def rtf_escape(text):
+    output = []
+    for character in text:
+        if character in "\\{}":
+            output.append("\\" + character)
+        elif character == "\n":
+            output.append("\\line\n")
+        elif character == "\t":
+            output.append("\\tab ")
+        elif ord(character) < 128:
+            output.append(character)
+        else:
+            encoded = character.encode("utf-16-le")
+            for index in range(0, len(encoded), 2):
+                value = int.from_bytes(encoded[index:index + 2], "little")
+                output.append(f"\\u{value if value < 32768 else value - 65536}?")
+    return "".join(output)
+
+
+def markdown_to_rtf(text):
+    parts = []
+    position = 0
+    for match in TOKEN.finditer(text):
+        parts.append(rtf_escape(text[position:match.start()]))
+        label, url, bold, code = match.groups()
+        if url:
+            instruction = url.replace("\\", "\\\\").replace('"', '\\"')
+            parts.append(f'{{\\field{{\\*\\fldinst{{HYPERLINK "{instruction}"}}}}{{\\fldrslt{{\\ul {rtf_escape(label)}}}}}}}')
+        elif bold:
+            parts.append(f"{{\\b {rtf_escape(bold)}}}")
+        else:
+            parts.append(f"{{\\f1 {rtf_escape(code)}}}")
+        position = match.end()
+    parts.append(rtf_escape(text[position:]))
+    body = "".join(parts)
+    return "{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Helvetica;}{\\f1 Menlo;}}\\f0\\fs24 " + body + "}"
+
+
+def copy_rtf(text):
+    with tempfile.NamedTemporaryFile(suffix=".rtf") as rtf_file, tempfile.NamedTemporaryFile(suffix=".txt") as text_file:
+        Path(rtf_file.name).write_text(markdown_to_rtf(text))
+        Path(text_file.name).write_text(text)
+        subprocess.run(
+            ["osascript", "-", rtf_file.name, text_file.name],
+            input=(
+                "on run argv\n"
+                "set rtfData to read POSIX file (item 1 of argv) as «class RTF »\n"
+                "set plainData to read POSIX file (item 2 of argv) as «class utf8»\n"
+                "set the clipboard to {«class RTF »:rtfData, «class utf8»:plainData}\n"
+                "end run\n"
+            ),
+            text=True,
+            check=True,
+        )
+
+
+def main():
+    text = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else sys.stdin.read()
+    if not text:
+        raise SystemExit("pbcopy-rich: no input")
+    copy_rtf(text)
+
+
+if __name__ == "__main__":
+    main()

@@ -38,7 +38,7 @@ Confidence reflects verification rigor, not optimism. If below ~85% and read-onl
 
 Before requesting approval for a push, run every available non-external preflight that could block it. Present the gated command only when it is expected to succeed. If it fails, diagnose locally and present one evidence-backed revised action rather than spending another approval on an unvalidated retry.
 
-Draft the exact content, show it, and auto-`pbcopy` it (clipboard is local — never the gated step). One draft per clipboard payload. Anything externally visible requires explicit approval after the draft is shown. After drafting, stop — don't offer to perform the gated action ("say the word", "want me to post it?"). Act only when explicitly asked (then use the exact approved draft).
+Draft the exact content, show it, and auto-`pbcopy` it (clipboard is local — never the gated step). One draft per clipboard payload. For content intended for Google Docs, use `pbcopy-rich` so links and basic Markdown formatting paste as rich text. Anything externally visible requires explicit approval after the draft is shown. After drafting, stop — don't offer to perform the gated action ("say the word", "want me to post it?"). Act only when explicitly asked (then use the exact approved draft).
 
 **Ship actions** — state changes I can delegate, e.g. push, `gt submit`, open/edit a PR, deploy: show → wait → execute only if I explicitly say so. Per action, not per batch — approving one never implies the next.
 
