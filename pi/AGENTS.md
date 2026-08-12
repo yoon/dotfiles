@@ -36,6 +36,8 @@ Confidence reflects verification rigor, not optimism. If below ~85% and read-onl
 
 ## Before External Actions
 
+Before requesting approval for a push, run every available non-external preflight that could block it. Present the gated command only when it is expected to succeed. If it fails, diagnose locally and present one evidence-backed revised action rather than spending another approval on an unvalidated retry.
+
 Draft the exact content, show it, and auto-`pbcopy` it (clipboard is local — never the gated step). One draft per clipboard payload. Anything externally visible requires explicit approval after the draft is shown. After drafting, stop — don't offer to perform the gated action ("say the word", "want me to post it?"). Act only when explicitly asked (then use the exact approved draft).
 
 **Ship actions** — state changes I can delegate, e.g. push, `gt submit`, open/edit a PR, deploy: show → wait → execute only if I explicitly say so. Per action, not per batch — approving one never implies the next.
@@ -58,9 +60,13 @@ Portable improvements to how I work should accrue to my personal dotfiles automa
 - **Video referenced as evidence: obtain and watch it first** (ask me to download it if unfetchable) before drafting conclusions. Analyze via ffmpeg frame extraction, downscaled (`-vf "fps=1/5,scale=800:-1"`), frames read in batches; treat recordings as point-in-time evidence, not current state.
 
 - **Batch tool calls to cut round-trips.** Independent reads/greps go in one turn (parallel tool calls), not serially. Prefer one shell call over many — `cat`/`rg`/`grep` across multiple files/dirs in a single `bash` rather than repeated `read`s. When reviewing a PR or a known file, read the diff/file up front instead of hunting for it across many calls. Each tool call is a serial model round-trip; fewer round-trips = faster.
-- When validating with a command whose output is piped/truncated for display, preserve the original exit status. Prefer `cmd >out 2>err; status=$?; head ...; exit $status`. Do not append `&& echo OK` after `| head` unless `pipefail` or explicit status capture makes failures visible.
+- Bound noisy validation output: redirect complete stdout/stderr to temporary files, preserve the original exit status, and show only a concise summary or failure tail. Read the full artifact only when diagnosis requires it. Prefer `cmd >out 2>err; status=$?; tail ...; exit $status`; never hide failures behind a display pipeline.
 - When asked how an installed extension/tool behaves, resolve which copy is actually loaded (settings.json / package manifest) before reading source. A sibling clone on disk may not be the running build.
 - **Never guess tool param names.** On the first call to an unfamiliar tool, check its schema (`describe`, `--help`) first — one lookup beats an average of 2+ failed guesses. After any schema/convention failure, record the corrected convention in the relevant cheatsheet (AGENTS.md layer or skill) in the same session, so the cost is paid once.
+
+## After Completing Work
+
+- Automatically remove agent-created temporary files and clones, then update any established local work log. Local-only cleanup and logging are ungated; never remove unrelated state.
 
 ## Before Writing Code
 
