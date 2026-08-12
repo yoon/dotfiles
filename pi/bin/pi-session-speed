@@ -5,7 +5,7 @@
 // live extension could add.
 //
 // Usage:
-//   pi-session-speed [SESSION]        SESSION = path | partial-id | (omitted → newest for $PWD)
+//   pi-session-speed [SESSION]        SESSION = path | partial-id | (omitted → globally newest)
 //   pi-session-speed --sum FILE...    totals across several sessions
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -14,10 +14,6 @@ import { homedir } from "node:os";
 const ROOT = join(homedir(), ".pi", "agent", "sessions");
 const toMs = (t) => (typeof t === "number" ? t : Date.parse(t));
 const IDLE_CAP_MIN = 5; // turns longer than this likely include idle/human time → flagged
-
-function keyForPath(path) {
-  return "--" + path.replace(/^\//, "").replace(/\//g, "-") + "--";
-}
 
 function resolve(arg) {
   if (arg && statSyncSafe(arg)) return arg;
@@ -28,13 +24,6 @@ function resolve(arg) {
   }
   if (arg) return all.filter((f) => f.includes(arg)).sort(byMtime).pop();
 
-  const cwd = process.cwd();
-  const keys = [keyForPath(cwd)];
-
-  for (const key of keys) {
-    const hit = all.filter((f) => f.includes(key)).sort(byMtime).pop();
-    if (hit) return hit;
-  }
   return all.sort(byMtime).pop();
 }
 const statSyncSafe = (p) => { try { return statSync(p); } catch { return null; } };
@@ -69,6 +58,8 @@ function turns(path) {
 function report(path) {
   const ts = turns(path);
   let total = 0, out = 0, reason = 0;
+  console.log(`session_file: ${path}`);
+  console.log(`first_prompt: ${(ts[0]?.prompt ?? "").slice(0, 160)}`);
   console.log(`\n${path.split("/").pop()}  (${ts.length} turns)`);
   console.log(`  min   out    reason tools  chars  model                prompt`);
   for (const t of ts) {

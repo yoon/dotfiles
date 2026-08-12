@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # pi-reflect-transcript — clean text transcript for one pi session JSONL.
 # Usage: pi-reflect-transcript [--compact-agent] [SESSION]
+#   SESSION omitted → globally newest session
 set -euo pipefail
 root=~/.pi/agent/sessions
 compact=false
@@ -10,27 +11,16 @@ if [[ "${1:-}" == "--compact-agent" ]]; then
 fi
 
 newest_all() {
-  find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
-}
-
-key_for_path() {
-  local p="${1#/}"
-  p="${p//\//-}"
-  printf '%s' "--$p--"
+  find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | sed -n '1p'
 }
 
 resolve() {
   local arg="${1:-}"
   if [[ -n "$arg" && -f "$arg" ]]; then echo "$arg"; return; fi
   if [[ -n "$arg" ]]; then
-    find "$root" -name "*$arg*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
+    find "$root" -name "*$arg*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | sed -n '1p'
     return
   fi
-
-  local key hit
-  key="$(key_for_path "$PWD")"
-  hit="$(ls -t "$root/$key"/*.jsonl 2>/dev/null | head -1 || true)"
-  [[ -n "$hit" ]] && { echo "$hit"; return; }
 
   newest_all
 }
@@ -38,6 +28,8 @@ resolve() {
 f="$(resolve "${1:-}")"
 [[ -n "$f" && -f "$f" ]] || { echo "no session file found (arg: '${1:-}')" >&2; exit 1; }
 echo "session_file: $f"
+printf 'first_prompt: '
+jq -rs '(first(.[] | select(.type=="message" and .message.role=="user") | [.message.content[]? | select(.type=="text") | .text] | join(" ")) // "")[0:160]' "$f"
 
 if $compact; then
   jq -r '

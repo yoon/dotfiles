@@ -1,20 +1,14 @@
 #!/usr/bin/env bash
 # pi-reflect-stats — quantitative summary of one pi session JSONL.
 # Usage: pi-reflect-stats [SESSION]
-#   SESSION = path to .jsonl | partial session id | (omitted → newest session for $PWD)
+#   SESSION = path to .jsonl | partial session id | (omitted → globally newest session)
 # Emits human-readable stats to stdout; the /reflect prompt reads these, then
 # reads the transcript itself for qualitative lessons.
 set -euo pipefail
 root=~/.pi/agent/sessions
 
 newest_all() {
-  find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
-}
-
-key_for_path() {
-  local p="${1#/}"
-  p="${p//\//-}"
-  printf '%s' "--$p--"
+  find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | sed -n '1p'
 }
 
 resolve() {
@@ -22,13 +16,8 @@ resolve() {
   if [[ -n "$arg" && -f "$arg" ]]; then echo "$arg"; return; fi
   if [[ -n "$arg" ]]; then
     find "$root" -name "*$arg*.jsonl" -print0 2>/dev/null \
-      | xargs -0 ls -t 2>/dev/null | head -1; return
+      | xargs -0 ls -t 2>/dev/null | sed -n '1p'; return
   fi
-
-  local key hit
-  key="$(key_for_path "$PWD")"
-  hit="$(ls -t "$root/$key"/*.jsonl 2>/dev/null | head -1 || true)"
-  [[ -n "$hit" ]] && { echo "$hit"; return; }
 
   newest_all
 }
@@ -36,6 +25,8 @@ resolve() {
 f="$(resolve "${1:-}")"
 [[ -n "$f" && -f "$f" ]] || { echo "no session file found (arg: '${1:-}')" >&2; exit 1; }
 echo "session_file: $f"
+printf 'first_prompt: '
+jq -rs '(first(.[] | select(.type=="message" and .message.role=="user") | [.message.content[]? | select(.type=="text") | .text] | join(" ")) // "")[0:160]' "$f"
 
 jq -s '
   def iso: sub("\\.[0-9]+Z$";"Z") | fromdateiso8601;

@@ -40,4 +40,4 @@ Dense, skimmable, honest — apply the information-design skill. No filler, no p
 3. **Concrete edits** — actual proposed diffs/additions to specific context files, skills, or scripts. Wait for approval before writing any of them (steering files are Mark's).
 4. **Cut-out-of-loop list** — avoidable stops, each with the rule or default that would remove it.
 
-End with the Understanding Pass quiz (2–3 questions) and the AI Confidence Score per Mark's AGENTS.md.
+Do not run an Understanding Pass or ask quiz questions for reflections. End with the AI Confidence Score per Mark's AGENTS.md.
