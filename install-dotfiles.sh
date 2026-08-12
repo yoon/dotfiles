@@ -29,6 +29,8 @@ link gitconfig.personal "$HOME/.gitconfig.personal"  # git name/aliases/prefs (s
 link gitignore          "$HOME/.gitignore"           # global ignore: .DS_Store, *~
 link vimrc              "$HOME/.vimrc"                # vim config
 link shell/shrc         "$HOME/.shrc"                 # portable aliases (see shrc hook)
+link herdr/config.toml   "$HOME/.config/herdr/config.toml" # Herdr UI and keybindings
+link herdr/bin/herdr-move-tab "$HOME/.local/bin/herdr-move-tab" # move a tab between workspaces
 # pi agent tooling (portable, no employer content). Extensions land as .disabled
 # (inactive by default — drop the .disabled to enable). See pi/AGENTS.md separately.
 link pi/prompts/reflect.md   "$HOME/.pi/agent/prompts/reflect.md"                # /reflect session retro

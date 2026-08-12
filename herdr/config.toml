@@ -1,0 +1,14 @@
+onboarding = false
+
+[ui]
+agent_panel_sort = "spaces"
+
+[experimental]
+pane_history = true
+
+[[keys.command]]
+key = "prefix+m"
+type = "popup"
+command = "$HOME/.local/bin/herdr-move-tab"
+width = "50%"
+height = "50%"

@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Move the current Herdr tab, preserving its panes and split layout."""
+
+import curses
+import json
+import subprocess
+import sys
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Leaf:
+    pane_id: str
+
+
+@dataclass(frozen=True)
+class Split:
+    direction: str
+    ratio: float
+    first: object
+    second: object
+
+
+def herdr(*args):
+    result = subprocess.run(("herdr", *args), check=True, text=True, capture_output=True)
+    try:
+        return json.loads(result.stdout)["result"]
+    except (json.JSONDecodeError, KeyError) as error:
+        raise RuntimeError(f"unexpected Herdr response to {' '.join(args)}") from error
+
+
+def build_tree(panes):
+    if not panes:
+        raise RuntimeError("the source tab has no panes")
+    if len(panes) == 1:
+        return Leaf(panes[0]["pane_id"])
+
+    left = min(p["rect"]["x"] for p in panes)
+    right = max(p["rect"]["x"] + p["rect"]["width"] for p in panes)
+    top = min(p["rect"]["y"] for p in panes)
+    bottom = max(p["rect"]["y"] + p["rect"]["height"] for p in panes)
+
+    for cut in sorted({p["rect"]["x"] + p["rect"]["width"] for p in panes}):
+        first = [p for p in panes if p["rect"]["x"] + p["rect"]["width"] <= cut]
+        second = [p for p in panes if p["rect"]["x"] >= cut]
+        if first and second and len(first) + len(second) == len(panes):
+            return Split("right", (cut - left) / (right - left), build_tree(first), build_tree(second))
+
+    for cut in sorted({p["rect"]["y"] + p["rect"]["height"] for p in panes}):
+        first = [p for p in panes if p["rect"]["y"] + p["rect"]["height"] <= cut]
+        second = [p for p in panes if p["rect"]["y"] >= cut]
+        if first and second and len(first) + len(second) == len(panes):
+            return Split("down", (cut - top) / (bottom - top), build_tree(first), build_tree(second))
+
+    raise RuntimeError("could not reconstruct the tab's split layout")
+
+
+def root_leaf(node):
+    return node.pane_id if isinstance(node, Leaf) else root_leaf(node.first)
+
+
+def workspace_for_number(options, number):
+    return next((workspace for workspace in options if workspace["number"] == number), None)
+
+
+def choose_workspace(options):
+    def draw(screen):
+        curses.curs_set(0)
+        selected = 0
+        while True:
+            screen.erase()
+            screen.addstr(1, 2, "Move tab to workspace", curses.A_BOLD)
+            screen.addstr(2, 2, "1–9 to move · ↑/↓ or j/k · Enter · Esc to cancel", curses.A_DIM)
+            for index, workspace in enumerate(options):
+                style = curses.A_REVERSE if index == selected else curses.A_NORMAL
+                screen.addstr(index + 4, 4, f"{workspace['number']}. {workspace['label']}", style)
+            screen.refresh()
+            key = screen.getch()
+            if key in (curses.KEY_UP, ord("k")):
+                selected = (selected - 1) % len(options)
+            elif key in (curses.KEY_DOWN, ord("j")):
+                selected = (selected + 1) % len(options)
+            elif ord("1") <= key <= ord("9"):
+                match = workspace_for_number(options, key - ord("0"))
+                if match:
+                    return match
+            elif key in (10, 13, curses.KEY_ENTER):
+                return options[selected]
+            elif key in (27, ord("q")):
+                return None
+
+    return curses.wrapper(draw)
+
+
+def move_tab(target, current=None, api=herdr):
+    current = current or api("pane", "current")["pane"]
+    if target["workspace_id"] == current["workspace_id"]:
+        raise RuntimeError("the selected workspace already contains this tab")
+
+    layout = api("pane", "layout", "--pane", current["pane_id"])["layout"]
+    tab = api("tab", "get", current["tab_id"])["tab"]
+    tree = build_tree(layout["panes"])
+    pane_ids = {pane["pane_id"] for pane in layout["panes"]}
+    if current["pane_id"] not in pane_ids or layout["focused_pane_id"] not in pane_ids:
+        raise RuntimeError("the source tab changed while preparing the move; try again")
+
+    moved = {}
+    target_tab = None
+
+    try:
+        first_old = root_leaf(tree)
+        result = api(
+            "pane", "move", first_old,
+            "--new-tab", "--workspace", target["workspace_id"],
+            "--label", tab["label"],
+            "--focus" if first_old == layout["focused_pane_id"] else "--no-focus",
+        )["move_result"]
+        moved[first_old] = result["pane"]["pane_id"]
+        target_tab = result["created_tab"]["tab_id"]
+
+        def materialize(node):
+            first_old_id = root_leaf(node.first)
+            second_old_id = root_leaf(node.second)
+            result = api(
+                "pane", "move", second_old_id,
+                "--tab", target_tab,
+                "--target-pane", moved[first_old_id],
+                "--split", node.direction,
+                "--ratio", str(node.ratio),
+                "--focus" if second_old_id == layout["focused_pane_id"] else "--no-focus",
+            )["move_result"]
+            moved[second_old_id] = result["pane"]["pane_id"]
+            if isinstance(node.first, Split):
+                materialize(node.first)
+            if isinstance(node.second, Split):
+                materialize(node.second)
+
+        if isinstance(tree, Split):
+            materialize(tree)
+    except Exception as error:
+        if moved:
+            raise RuntimeError(
+                f"move stopped after {len(moved)} of {len(pane_ids)} panes; "
+                f"moved panes are in target tab {target_tab}"
+            ) from error
+        raise
+
+
+def main():
+    current = herdr("pane", "current")["pane"]
+    workspaces = herdr("workspace", "list")["workspaces"]
+    options = [workspace for workspace in workspaces if workspace["workspace_id"] != current["workspace_id"]]
+    if not options:
+        raise RuntimeError("there are no other workspaces")
+    target = choose_workspace(options)
+    if target:
+        move_tab(target, current=current)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except subprocess.CalledProcessError as error:
+        print((error.stderr or error.stdout or str(error)).strip(), file=sys.stderr)
+        raise SystemExit(1)
+    except Exception as error:
+        print(f"herdr-move-tab: {error}", file=sys.stderr)
+        raise SystemExit(1)
