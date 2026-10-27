@@ -35,8 +35,10 @@ Read `~/.local/recurring/pr-review/session-context.md` first.
 Before surfacing or drafting a blocking finding, verify:
 
 1. **Trigger** — the suspected failure can occur through the actual implementation.
-2. **Propagation** — trace every adapter, Result conversion, rescue, and fallback.
+2. **Propagation** — trace every adapter, Result conversion, rescue, and fallback. Read each hop's entire enclosing method, never from a line offset; a guard one line above the call site voids the finding.
 3. **Impact** — identify the concrete caller-visible or user-visible consequence.
+
+When asked to fix a finding, write the failing test first. If it passes, retract before any environment setup.
 
 An unverified link is an investigation task, not a finding.
 
@@ -61,6 +63,10 @@ An unverified link is an investigation task, not a finding.
 
 **Bug shapes**
 Check the common failure class: identity dimensions (cache/session/storage/auth), semantic totals (money), narrow error boundaries, macro writer+reader sides, complete flag cleanup, and executable generated/deprecation recordings.
+
+## Self-authored PRs
+
+Skip Overview and Quiz; deliver preflight findings directly. Each status turn re-fetches the remote tip, all comments (including replies), reviews, and CI before answering.
 
 ## 5. Overview, then quiz
 
