@@ -12,6 +12,7 @@ Shared across pi, Claude Code, and any other agent that reads this file. Portabl
 - **PR review replies follow the `pr-review` skill.** It owns the reply structure (PR link and context up front, findings held until the model is built, verdict format); load it for any PR review rather than improvising.
 - **Surface commit messages and PR descriptions in chat.** When I write a commit message or PR description, show its full text as chat output — don't leave it buried inside a bash command where I have to reconstruct it from the invocation.
 - **Don't hard-wrap prose in PR/issue/comment bodies.** GitHub renders single newlines as visible line breaks — write each paragraph as one line and let the host wrap. (Hard wrapping is fine in code, commit message bodies, and .md files.)
+- **Drafts for channels outside the project open with one line of context** (what moved, what's stuck), then the ask; ≤5 sentences unless I ask for more.
 
 ## Terseness bias
 
@@ -57,6 +58,8 @@ Portable improvements to how I work should accrue to my personal dotfiles automa
 
 ## Tool Use
 
+- Before asserting a CLI flag is required or a gate is non-blocking, check the tool's `--help` or the live gate state in the same turn; precedent from a prior day is not evidence.
+- Never block the foreground on sleep/poll loops >2 min; snapshot, then use a watcher tool or re-check at the next turn.
 - **Video referenced as evidence: obtain and watch it first** (ask me to download it if unfetchable) before drafting conclusions. Analyze via ffmpeg frame extraction, downscaled (`-vf "fps=1/5,scale=800:-1"`), frames read in batches; treat recordings as point-in-time evidence, not current state.
 
 - **Batch tool calls to cut round-trips.** Independent reads/greps go in one turn (parallel tool calls), not serially. Prefer one shell call over many — `cat`/`rg`/`grep` across multiple files/dirs in a single `bash` rather than repeated `read`s. When reviewing a PR or a known file, read the diff/file up front instead of hunting for it across many calls. Each tool call is a serial model round-trip; fewer round-trips = faster.
