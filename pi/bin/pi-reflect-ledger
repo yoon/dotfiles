@@ -3,10 +3,20 @@
 # Prints every user turn (truncated), every tool call with truncated args,
 # and compaction markers. Complements pi-reflect-stats (quantitative) and
 # pi-reflect-transcript (full text, may exceed output caps on long sessions).
-# Usage: pi-reflect-ledger [SESSION]
-#   SESSION = path to .jsonl | partial session id | (omitted → newest session for $PWD)
+# Usage: pi-reflect-ledger [--errors] [SESSION]
+#   --errors = group failed tool calls by tool and originating user turn
+#   SESSION  = path to .jsonl | partial session id | (omitted → newest session for $PWD)
 set -euo pipefail
 root=~/.pi/agent/sessions
+errors_only=false
+session=""
+for arg in "$@"; do
+  case "$arg" in
+    --errors) errors_only=true ;;
+    -*) echo "unknown option: $arg" >&2; exit 2 ;;
+    *) [[ -z "$session" ]] || { echo "accepts at most one session" >&2; exit 2; }; session="$arg" ;;
+  esac
+done
 
 newest_all() {
   find "$root" -name "*.jsonl" -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1
@@ -34,15 +44,20 @@ resolve() {
   newest_all
 }
 
-f="$(resolve "${1:-}")"
-[[ -n "$f" && -f "$f" ]] || { echo "no session file found (arg: '${1:-}')" >&2; exit 1; }
+f="$(resolve "$session")"
+[[ -n "$f" && -f "$f" ]] || { echo "no session file found (arg: '$session')" >&2; exit 1; }
 echo "session_file: $f"
 
-python3 - "$f" <<'EOF'
+python3 - "$f" "$errors_only" <<'EOF'
 import json, sys
+from collections import Counter
 
 USER_W, ARG_W = 160, 110
+errors_only = sys.argv[2] == "true"
 n = 0
+calls = {}
+errors = Counter()
+previews = {}
 for line in open(sys.argv[1]):
     try:
         e = json.loads(line)
@@ -50,7 +65,8 @@ for line in open(sys.argv[1]):
         continue
     t = e.get("type")
     if t == "compaction":
-        print("=== COMPACTION ===")
+        if not errors_only:
+            print("=== COMPACTION ===")
         continue
     if t != "message":
         continue
@@ -64,11 +80,30 @@ for line in open(sys.argv[1]):
         )
         if txt.strip():
             n += 1
-            print(f"--- USER {n}: {txt[:USER_W]!r}")
+            if not errors_only:
+                print(f"--- USER {n}: {txt[:USER_W]!r}")
     elif role == "assistant" and isinstance(c, list):
         for x in c:
             if x.get("type") in ("toolCall", "tool_use"):
                 name = x.get("name") or x.get("toolName")
                 args = json.dumps(x.get("input") or x.get("arguments") or {})[:ARG_W]
-                print(f"  TOOL {name} {args}")
+                calls[x.get("id")] = (name, n)
+                if not errors_only:
+                    print(f"  TOOL {name} {args}")
+    elif role == "toolResult" and m.get("isError"):
+        body = " ".join(
+            x.get("text", "") for x in (c or [])
+            if isinstance(x, dict) and x.get("type") == "text"
+        )
+        name, turn = calls.get(m.get("toolCallId"), (m.get("toolName") or "?", n))
+        preview = " ".join(body.split())[:160]
+        errors[(name, turn)] += 1
+        previews.setdefault((name, turn), preview)
+        if not errors_only:
+            print(f"  ERROR {name} {preview!r}")
+
+if errors_only:
+    print(f"tool_errors: {sum(errors.values())}")
+    for (name, turn), count in sorted(errors.items(), key=lambda item: (-item[1], item[0])):
+        print(f"  {count:3}  USER {turn:<3}  {name:<28} {previews[(name, turn)]!r}")
 EOF

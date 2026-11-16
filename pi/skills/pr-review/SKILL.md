@@ -66,21 +66,22 @@ Check the common failure class: identity dimensions (cache/session/storage/auth)
 
 ## Self-authored PRs
 
-Skip Overview and Quiz; deliver preflight findings directly. Each status turn re-fetches the remote tip, all comments (including replies), reviews, and CI before answering.
+Deliver preflight findings directly. Each status turn re-fetches the remote tip, all comments (including replies), reviews, and CI before answering.
 
-## 5. Overview, then quiz
+## 5. Overview and findings
 
-Do the analysis above and hold the findings until the user has read the overview and built their own mental model — front-loading "bug on line 42" hijacks attention before they know what the PR is (Geoffrey Litt, ["Enough AI copilots! We need AI HUDs"](https://www.geoffreylitt.com/2025/07/27/enough-ai-copilots-we-need-ai-huds) — be the instrument panel that sharpens the reviewer's senses, not the copilot that reviews for them). Don't reveal the next phase until asked or the quiz is answered:
+Build the user's mental model without gating the review behind a quiz. Deliver the overview, findings, and verdict in the same response once verification is complete.
 
-1. **Overview** — start by displaying the GitHub PR URL as a link. Reconstruct why the PR exists (≤3 sentences) plus a `matches`/`stale`/`thin` verdict on the description, then background → intuition → what changed → why in reading order, citing `path:line` as pointers not conclusions. No evaluation yet: avoid *bug, wrong, broken, missing, should, concern, issue, careful* and severity markers.
-2. **Quiz** — for non-trivial changes, ask 2–3 withheld-answer questions (a traced detail, a failure mode, a why-this-not-that). The user answers first; if they can't, point them at the `path:line` to re-derive. Proves the model was built before findings appear.
+Start with the GitHub PR URL as a link. Explain why the PR exists (≤3 sentences), assess the description as `matches`/`stale`/`thin`, then give a short background → intuition → what changed → why explanation with `path:line` pointers. Follow immediately with the findings and verdict.
 
-Skip the Overview and Quiz for trivial/mechanical PRs (flag removals, dep bumps, bot churn, and display-only refactors that leave execution/results unchanged with focused boundary coverage) and go straight to the verdict.
+For trivial/mechanical PRs (flag removals, dep bumps, bot churn, and display-only refactors that leave execution/results unchanged with focused boundary coverage), skip the walkthrough and go straight to the verdict.
+
+Follow the global self-coaching cadence for a separate learning question. Never withhold findings or verdicts for an answer. A dedicated quiz is opt-in.
 
 ## 6. Verdict and draft
 
 - Do not draft copy-ready review comments until the verdict is stable and the blocker proof gate is complete.
-- Release the buffered findings as a ranked list, most load-bearing first, one per line: `path:line → neutral observation → what to check`. Coordinates to look at, not verdicts to accept.
+- Present verified findings as a ranked list, most load-bearing first, one per line: `path:line → neutral observation → what to check`. Coordinates to look at, not verdicts to accept.
 - Give the verdict (approve / request changes / comment), suggestions, and copy-ready review body. If the Overview was skipped, open with the PR's GitHub URL and a one-line recap so the reply still leads with the link and context.
 - Show the draft and copy it locally, then stop. Don't offer to submit; submit only when explicitly asked.
 - Don't hard-wrap prose; let the host wrap.
